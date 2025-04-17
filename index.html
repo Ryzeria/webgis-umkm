@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemanfaatan WebGIS - UMKM Jambangan</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
+    <style>
+        /* General Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+
+        /* Navbar Styles */
+        nav {
+            background-color: #333;
+            padding: 10px;
+            color: white;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 999;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        nav .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        nav ul li {
+            margin-left: 20px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        /* Landing Page */
+        header {
+            position: relative;
+            height: 100vh;
+            background: url('header.jpg') no-repeat center center/cover;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 20px;
+            margin-top: 60px; /* Offset for navbar */
+        }
+
+        header .content {
+            max-width: 800px;
+            color: white;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5); /* Add semi-transparent background */
+            border-radius: 8px;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        header p {
+            font-size: 1.5em;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header .content a {
+            background-color: #FF7F50;
+            padding: 15px 30px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.2em;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: inline-block;
+        }
+
+        /* Map Page Styles */
+        #map {
+            height: 70vh; /* Adjust height for map */
+            width: 100%;
+        }
+
+        /* Table Styles */
+        #attribute-table {
+            margin: 20px;
+            padding: 10px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #attribute-table th,
+        #attribute-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #attribute-table th {
+            background-color: #f2f2f2;
+        }
+
+        #map-container {
+            padding: 20px;
+            margin-top: 20px; /* Add some space between the map and table */
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: white;
+        }
+
+        /* Title on Map */
+        #map-title {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            z-index: 999;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav>
+        <div class="logo">
+            <img src="logo.png" alt="Logo" style="height: 40px; width: auto;">
+        </div>
+        <ul>
+            <li><a href="#map-page" onclick="showMap()">Masuk ke Peta</a></li>
+            <li><a href="#about">Tentang</a></li>
+        </ul>
+    </nav>
+
+    <!-- Landing Page -->
+    <header>
+        <div class="content">
+            <h1>Pemanfaatan WebGIS dalam Pemetaan dan Penyuluhan Edukasi UMKM</h1>
+            <p>Proyek ini bertujuan untuk membantu pemetaan UMKM di Kecamatan Jambangan, Kota Surabaya, serta memberikan penyuluhan edukasi berbasis GIS yang interaktif untuk mendukung pengembangan ekonomi lokal.</p>
+            <a href="#map-page" onclick="showMap()">Masuk ke Peta</a>
+        </div>
+    </header>
+
+    <!-- Map Page -->
+    <div id="map-page" style="display:none;">
+        <div id="map-container">
+            <div id="map"></div>
+            <h3>Table Atribut UMKM</h3>
+            <table id="attribute-table"></table>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Pemanfaatan WebGIS - Kecamatan Jambangan, Surabaya</p>
+    </footer>
+
+    <!-- Map Title -->
+    <div id="map-title">
+        Peta UMKM di Kecamatan Jambangan
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        function showMap() {
+            document.querySelector('header').style.display = 'none';
+            document.getElementById('map-page').style.display = 'block';
+
+            // Initialize the map
+            var map = L.map('map').setView([-7.332, 112.709], 13); // Center the map on JAMBANGAN
+
+            // Add basemaps
+            var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; <a href="https://www.esri.com/">ESRI</a>',
+                maxZoom: 19
+            });
+
+            var OpenStreetMap_Mapnik = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            });
+
+            var Stamen_Terrain = L.tileLayer('https://{s}.tile.stamen.com/terrain/{z}/{x}/{y}.jpg', {
+                attribution: '&copy; <a href="http://stamen.com">Stamen Design</a> <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>',
+                maxZoom: 18
+            });
+
+            var Stamen_Toner = L.tileLayer('https://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://stamen.com">Stamen Design</a> <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>',
+                maxZoom: 18
+            });
+
+            var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+                maxZoom: 19
+            });
+
+            var CartoDB_DarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+                maxZoom: 19
+            });
+
+            var OpenTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.opentopomap.org/copyright">OpenTopoMap</a>',
+                maxZoom: 17
+            });
+
+            var Esri_StreetMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; <a href="https://www.esri.com/">ESRI</a>',
+                maxZoom: 19
+            });
+
+            // Set default basemap
+            Esri_WorldImagery.addTo(map);
+
+            // Add layer control
+            var baseMaps = {
+                "Satellite": Esri_WorldImagery,
+                "OpenStreetMap": OpenStreetMap_Mapnik,
+                "Terrain": Stamen_Terrain,
+                "Toner": Stamen_Toner,
+                "CartoDB Positron": CartoDB_Positron,
+                "CartoDB Dark Matter": CartoDB_DarkMatter,
+                "OpenTopoMap": OpenTopoMap,
+                "Street Map": Esri_StreetMap
+            };
+
+            L.control.layers(baseMaps).addTo(map);
+
+            // Add the GeoJSON layer
+            var geojsonLayer = L.geoJSON(null, {
+                onEachFeature: function (feature, layer) {
+                    layer.bindPopup("<strong>" + (feature.properties.NAME || "Unnamed Area") + "</strong>");
+                    layer.on('click', function () {
+                        displayAttributes(feature.properties);
+                    });
+                }
+            });
+
+            // Fetch the GeoJSON data from SHP.json file
+            fetch('SHP.json')
+                .then(response => response.json())
+                .then(data => {
+                    geojsonLayer.addData(data);
+                    geojsonLayer.addTo(map);
+                    map.fitBounds(geojsonLayer.getBounds()); // Zoom into the bounds of the feature
+                })
+                .catch(err => console.log(err));
+        }
+
+        function displayAttributes(properties) {
+            var table = document.getElementById("attribute-table");
+            table.innerHTML = ""; // Clear previous data
+
+            var header = table.createTHead();
+            var headerRow = header.insertRow(0);
+            headerRow.insertCell(0).outerHTML = "<th>Attribute</th>";
+            headerRow.insertCell(1).outerHTML = "<th>Value</th>";
+
+            var body = table.createTBody();
+
+            for (var key in properties) {
+                var row = body.insertRow();
+                row.insertCell(0).textContent = key;
+                row.insertCell(1).textContent = properties[key];
+            }
+        }
+    </script>
+</body>
+
+</html>
